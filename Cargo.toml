@@ -1,0 +1,18 @@
+[package]
+name = "gateway"
+version = "0.1.0"
+authors = ["Merlintor <merlinfuchs2001@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tracing-subscriber = "0.2.14"
+futures = "0.3"
+tokio = { version = "0.2", features = ["full"] }
+redis = { version = "0.17.0", features = ["tokio-comp"] }
+twilight-gateway = {git = "https://github.com/Erk-/twilight", branch = "gateway-url"}
+twilight-model = {git = "https://github.com/Erk-/twilight", branch = "gateway-url"}
+twilight-http = {git = "https://github.com/Erk-/twilight", branch = "gateway-url"}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
