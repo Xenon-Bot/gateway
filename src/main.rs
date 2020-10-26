@@ -6,16 +6,16 @@ use twilight_http::Client as HttpClient;
 use std::sync::Arc;
 use tracing_subscriber;
 use redis::{aio::MultiplexedConnection as RedisConnection};
-use serde_json::{Value as JsonValue};
+use serde_json::{Value as JSONValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 struct GatewayPayload {
     op: u32,
     s: u128,
-    t: JsonValue,
-    // String but sometimes null
-    d: JsonValue,
+    // String for OP 0; otherwise null
+    t: JSONValue,
+    d: JSONValue,
 }
 
 #[tokio::main]
@@ -30,6 +30,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let (redis_con, redis_fut) = redis_client
         .create_multiplexed_tokio_connection()
         .await?;
+    // I have no idea if that's how you are supposed to do it, but I think it works lol
     tokio::spawn(redis_fut);
 
     let token = env::var("DISCORD_TOKEN")
@@ -87,7 +88,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
-async fn cache_event(mut redis: RedisConnection, event: &str, data: &JsonValue, raw_data: &String) {
+async fn cache_event(mut redis: RedisConnection, event: &str, data: &JSONValue, raw_data: &String) {
+    // Just an example for how caching could work; I'm not actually planing to cache guilds
     match event {
         "GUILD_CREATE" => {
             if let Some(guild_id) = &data["id"].as_str() {
