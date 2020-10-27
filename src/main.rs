@@ -5,7 +5,7 @@ use twilight_model::gateway::Intents;
 use twilight_http::Client as HttpClient;
 use std::sync::Arc;
 use tracing_subscriber;
-use redis::{aio::MultiplexedConnection as RedisConnection};
+use redis::{aio::MultiplexedConnection as RedisConnection, Client as RedisClient};
 use serde_json::{Value as JSONValue};
 use serde::{Deserialize, Serialize};
 
@@ -78,6 +78,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     tokio::spawn(async move {
         cluster_spawn.up().await;
     });
+    tokio::spawn(send_subscriber(cluster.clone(), redis_client.clone()));
 
     let mut events = cluster
         .some_events(EventTypeFlags::from(EventType::ShardPayload));
@@ -130,4 +131,18 @@ async fn handle_event(mut redis: RedisConnection, _shard_id: u64, event: Event) 
                 .await;
         };
     };
+}
+
+async fn send_subscriber(cluster: Cluster, redis: RedisClient) {
+    let mut sub_conn = redis
+        .get_async_connection()
+        .await
+        .expect("Failed to start send subscriber")
+        .into_pubsub();
+    let mut sub_stream = sub_conn.on_message();
+    while let Some(msg) = sub_stream.next().await {
+        if let Ok(payload) = msg.get_payload() {
+            let _ = cluster.command_raw(0, payload).await;
+        }
+    }
 }
